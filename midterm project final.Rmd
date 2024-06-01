@@ -1,0 +1,85 @@
+---
+title: "STAT515 Midterm Project"
+author: "Aditya Ashok Sharma"
+date: "2023-10-04"
+output:
+  word_document: default
+  html_document:
+    df_print: paged
+  pdf_document: default
+always_allow_html: yes
+---
+
+```{r}
+library(tidyverse)
+library(plotly)
+library(treemapify)
+library(leaflet)
+library(gridExtra)
+source('C:/Users/ashut/OneDrive/Desktop/STAT 515/week3/hw.R')
+```
+
+```{r}
+#Top Jobs
+df=read.csv('C:/Users/ashut/OneDrive/Desktop/STAT 515/midterm project/Data_Science_Fields_Salary_Categorization.csv')
+dff=read.csv("C:/Users/ashut/OneDrive/Desktop/STAT 515/midterm project/multipleChoiceResponses.csv")
+c=table(df$Designation)
+count_df <- as.data.frame(c)
+count_df <- count_df[order(-count_df$Freq), ] 
+h=head(count_df,n=20)
+h=setNames(h,c("Designation","Freq"))
+(p10 = plot_ly(h, x = ~reorder(Designation,Freq), y = ~Freq, type = 'bar',stroke = I('black'), 
+               marker = list(color = 'aquamarine')) %>% 
+    layout(title="Top Jobs in Data Science",xaxis = list(title = "Designation", tickangle = -45,labels='Designation'),
+           yaxis = list(title = "Number of Jobs",labels='Count'),
+           margin = list(b = 100),
+           barmode = 'group'))
+```
+```{r}
+#top DS and DE salary
+fg=df[df$Designation=='Data Scientist',]
+fz=df[df$Designation=='Data Engineer',]
+total <- rbind(fg,fz)
+fh= total[order(-total$Salary_In_Rupees), ] 
+p=ggplot(fh,aes(y=Salary_In_Rupees,x=Designation,colour=Experience))+
+  geom_jitter(position = position_jitter(0.35))+
+  scale_color_manual(values = c("green","orange","red","blue"),labels=c("Entry Level","Executive Level","Mid Intermediate","Senior Executive"))+
+  labs(x = "Designation",y="Salary",
+       title = "Salary of Data Scientist vs Data Engineer")+
+  theme(plot.title = element_text(hjust = 0.5))+theme_grey()
+ggplotly(p)
+```
+```{r}
+#Location
+world_tbl <- map_data("world") %>% as_tibble()
+world_tbl
+co=table(df$Company_Location)
+compLoc=as.data.frame(co)
+compLoc=setNames(compLoc,c("Location",'Freq'))
+compLoc=compLoc[order(-compLoc$Freq),]
+Top=head(compLoc,n=20)
+Top$long=c(-77.20825,-2.86423,-111.10664,10.39021,80.49813,0.98020,-3.43107,22.11486,138.70937,14.06348,5.62164,18.60439,-8.05365,53.92783,135.29570,-56.17168,10.14564,6.11432,-102.92028,68.31736)
+Top$lat=c(38.95937,55.28553,60.61536,51.17625,23.19050,47.62398,39.63351,39.53031,36.86362,47.59883,52.16620,54.45918,41.26529,23.89721,-24.63998,-8.25338,55.51703,49.62201,24.27850,29.48726)
+topp=head(Top,n=10)
+leaflet(topp) %>% 
+  addProviderTiles(providers$Esri.WorldImagery)%>%
+  addMarkers(lng = ~long,
+             lat = ~lat,
+             label = ~Freq,
+             popup = ~Location)
+```
+```{r}
+#gender
+v = dff %>%
+  filter(GenderSelect %in% c("Male", "Female"),CurrentJobTitleSelect!='') %>%
+  group_by(CurrentJobTitleSelect,GenderSelect) %>% 
+  summarise(count = n()) %>%
+  arrange(desc(count))
+(p20 = plot_ly(v, y = ~reorder(CurrentJobTitleSelect,count), x = ~count,split = ~GenderSelect, type = 'bar',stroke = I('black'), 
+               marker = list()) %>% 
+    layout(title="Gender Ratio in Data Science",xaxis = list(title = "Count"),
+           yaxis = list(title = "Job Title"),
+           margin = list(b = 70)
+    ))
+```
+
